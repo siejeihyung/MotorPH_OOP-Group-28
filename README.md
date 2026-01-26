@@ -25,7 +25,7 @@
   </tr>
   <tr>
     <td><code>regularEmployee.java</code></td>
-    <td>Logic Implementation (Inheritance)</td>
+    <td>Logic Implementation (Abstraction)</td>
   </tr>
   <tr>
     <td><code>grossPay.java</code></td>
