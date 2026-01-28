@@ -1,34 +1,44 @@
-MotorPH Payroll System in MPHC02
+## **Project Update: Core OOP Implementation**
 
-This Java-based payroll system is developed for MotorPH to streamline employee management and automate weekly salary computations. It features integrated calculations for government-mandated deductions, including SSS, PhilHealth, Pag-IBIG, and withholding tax. The system is built using Java Swing for the graphical user interface (GUI) and utilizes text files for data storage and retrieval.
+This project is an ongoing development of the **MotorPH Payroll System**. The latest updates focus on refactoring the core logic to strictly follow **Object-Oriented Programming (OOP)** principles, specifically focusing on **Inheritance**, **Encapsulation**, and **Abstraction**.
 
-Note: This version supports more than three (3) employees only, identified by the following employee numbers: 10001, 10002, and 10003 and More.
+> [!IMPORTANT]
+> **Status:** Code is being continued. Current efforts are focused on modularizing the `model` package to allow for scalable employee management.
 
+---
 
+### **Key OOP Principles Applied**
 
-System Access
+#### **1. Inheritance (New Update)**
 
-Username: admin
+We have introduced a hierarchical structure to the employee data model. By using the `extends` keyword, we've created a relationship where specific employee types (like `regularEmployee`) inherit all identity and financial attributes from the base `Employee` class. This eliminates code redundancy and improves maintainability.
 
-Password: 1234
+#### **2. Encapsulation**
 
+Applied in **`Employee.java`** using `protected` access modifiers and `public` getters. This ensures that sensitive data, such as `basicSalary` and `sss`, are protected and only accessible through controlled methods.
 
-(Development Team)
+#### **3. Abstraction**
 
-Rhynne Gracelle Pontanilla -
-Add a form or frame that displays the following fields for all employees in a JTable: Employee Number, Last Name, First Name, SSS Number, PhilHealth Number, TIN, and Pag-IBIG Number.
-Allow the user to select an employee from the table and click the "View Employee" button to open a new frame displaying the employee’s full details.
+The system uses the **`grossPayable.java`** interface to define the structural requirements for salary computations. By declaring the `Employee` class as `abstract`, we ensure that a generic employee cannot be instantiated, forcing the use of specialized subclasses that implement the specific logic for weekly gross salary.
 
-Carl Justine Pontanilla - 
-Add a "New Employee" button that opens a form for entering new employee information.
+---
 
-Ghaby Gonzales – 
-Upon submission, the new employee’s data should be appended to the CSV file, and the JTable should refresh to show the updated list of employees./ Modified Addemployeepanel & Employeepanel.
+### **File Overview**
 
-Conrado Santos – 
-File handler, Write, read,all etc /  In the new frame, prompt the user to select the month for which the program will compute the employee’s salary.
-After clicking the "Compute" button, display both the employee’s details and the computed salary information within the same frame.
+The following files represent the core logic of the system's architecture:
 
+| File Name | Role in System | OOP Principle |
+| --- | --- | --- |
+| **`Employee.java`** | Base Data Model & Template | **Encapsulation & Abstraction** |
+| **`regularEmployee.java`** | Specific Logic Implementation | **Inheritance** |
+| **`grossPayable.java`** | System-wide Interface | **Abstraction** |
 
-<< Continued by the Following Devlopment Team in Coordination with Object Oriented Programming Subject >> 
+---
 
+### **Folder Structure**
+
+The files are organized for easy access and modularity:
+
+* `src/model/`: Contains the data models and business logic.
+* `src/gui/`: Contains the visual components (Swing/AWT).
+* `src/assets/`: Contains project resources like images and icons.
