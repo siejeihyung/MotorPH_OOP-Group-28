@@ -1,5 +1,3 @@
-package model;
-
 // This is the SINGLE Parent Class for all types of Employees
 
 /**
@@ -7,49 +5,66 @@ package model;
  * @author CJPontanilla
  */
 // Inside Employee.java
+package model;
 
-public abstract class Employee implements grossPayable {
-    // Identity Fields (Protected so subclasses can use them)
-    protected String employeeID;
-    protected String lastName;
-    protected String firstName;
-    protected String sss;
-    protected String philhealth;
-    protected String tin;
-    protected String pagibig;
+import java.time.LocalDate;
 
-    // Salary Fields
-    protected double basicSalary;
-    protected double semiMonthlyRate;
-    protected double hourlyRate;
-    protected double totalBenefits;
+public abstract class Employee {
 
-    // Merged Constructor: This initializes everything at once
-    public Employee(String employeeID, String lastName, String firstName, 
+    // Identity fields (private for encapsulation, access via getters)
+    private String employeeID;
+    private String lastName;
+    private String firstName;
+    private String sss;
+    private String philhealth;
+    private String tin;
+    private String pagibig;
+    // Salary fields
+    private double basicSalary;
+    private double semiMonthlyRate;
+    private double hourlyRate;
+    private double totalBenefits;
+
+    public Employee(String employeeID, String lastName, String firstName,
+                    String sss, String philhealth, String tin, String pagibig,
                     double basicSalary, double semiMonthlyRate, double hourlyRate, double totalBenefits) {
+
         this.employeeID = employeeID;
         this.lastName = lastName;
         this.firstName = firstName;
+        this.sss = sss;
+        this.philhealth = philhealth;
+        this.tin = tin;
+        this.pagibig = pagibig;
         this.basicSalary = basicSalary;
         this.semiMonthlyRate = semiMonthlyRate;
         this.hourlyRate = hourlyRate;
         this.totalBenefits = totalBenefits;
-    }
-    
-    public double getBasicSalary() {
-        return basicSalary;
+        
     }
 
-    public double getTotalBenefits() {
-        return totalBenefits;
-    }
-
-    // --- Getters and Setters ---
+    // Basic getters
     public String getEmployeeID() { return employeeID; }
+    public String getLastName() { return lastName; }
+    public String getFirstName() { return firstName; }
     public String getFullName() { return firstName + " " + lastName; }
-    public double getHourlyRate() { return hourlyRate; }
 
-    // --- Abstract Methods ---
-    // Subclasses like regularEmployee MUST implement these
-    public abstract double calculateGross();
+    public String getSss() { return sss; }
+    public String getPhilhealth() { return philhealth; }
+    public String getTin() { return tin; }
+    public String getPagibig() { return pagibig; }
+
+    public double getBasicSalary() { return basicSalary; }
+    public double getSemiMonthlyRate() { return semiMonthlyRate; }
+    public double getHourlyRate() { return hourlyRate; }
+    public double getTotalBenefits() { return totalBenefits; }
+    
+    public LeaveRequest requestLeave(LocalDate startDate, LocalDate endDate, String leaveType, String reason) {
+    // any employee can create a leave request
+    return new LeaveRequest(getEmployeeID(), startDate, endDate, leaveType, reason);
+}
+
+    // Abstraction: subclasses must provide formulas
+    public abstract double calculateGrossWeeklySalary();
+    public abstract double computeGrossPay();
 }
