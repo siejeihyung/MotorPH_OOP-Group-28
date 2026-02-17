@@ -15,16 +15,12 @@ public class RegularEmployee extends Employee {
         
         super(employeeID, lastName, firstName, basicSalary, semiMonthlyRate, hourlyRate, totalBenefits);
     }
-
-    // Renamed to match the exact name in your grossPayable interface
-    @Override
-    public double getcalculateGrossWeeklySalary() {
-        return getBasicSalary() + getTotalBenefits();
-    }
-
+    
+    // Regular employees get basic salary + fixed benefits
     // Adding this to satisfy the Employee abstract class if it still uses calculateGross
     @Override
-    public double calculateGross() {
-        return getcalculateGrossWeeklySalary();
+    public double calculateGrossPay() {
+        // Regular employees get basic salary + fixed benefits
+        return this.basicSalary + this.totalBenefits;
     }
 }

@@ -1,6 +1,9 @@
 package model;
 
-// This is the SINGLE Parent Class for all types of Employees
+/**
+ * The SINGLE Parent Class for all types of Employees.
+ * Implements IPayable to ensure every employee has a calculation for gross pay.
+ */
 
 /**
  *
@@ -10,10 +13,7 @@ package model;
 
 public abstract class Employee implements IPayable {
 
-    static double calculateGrossSalary() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-    // Identity Fields (Protected so subclasses can use them)
+    // 1. Identity Fields: Protected so subclasses can access them directly
     protected String employeeID;
     protected String lastName;
     protected String firstName;
@@ -22,13 +22,13 @@ public abstract class Employee implements IPayable {
     protected String tin;
     protected String pagibig;
 
-    // Salary Fields
+    // 2. Salary Fields: Common to all employee types
     protected double basicSalary;
     protected double semiMonthlyRate;
     protected double hourlyRate;
     protected double totalBenefits;
 
-    // Merged Constructor: This initializes everything at once
+    // 3. Merged Constructor: Initializes the common state of any employee
     public Employee(String employeeID, String lastName, String firstName, 
                     double basicSalary, double semiMonthlyRate, double hourlyRate, double totalBenefits) {
         this.employeeID = employeeID;
@@ -39,21 +39,38 @@ public abstract class Employee implements IPayable {
         this.hourlyRate = hourlyRate;
         this.totalBenefits = totalBenefits;
     }
-    
-    public double getBasicSalary() {
-        return basicSalary;
-    }
-
-    public double getTotalBenefits() {
-        return totalBenefits;
-    }
-
-    // --- Getters and Setters ---
+   
+    // 5. GETTERS: Controlled way to read data
     public String getEmployeeID() { return employeeID; }
+    public String getLastName() { return lastName; }
+    public String getFirstName() { return firstName; }
     public String getFullName() { return firstName + " " + lastName; }
+    
+    public double getBasicSalary() { return basicSalary; } // Common Concrete Methods: Standard logic used by all subclasses
+    public double getSemiMonthlyRate() { return semiMonthlyRate; }
     public double getHourlyRate() { return hourlyRate; }
+    public double getTotalBenefits() { return totalBenefits; } // Common Concrete Methods: Standard logic used by all subclasses
+    
+    // 6. SETTERS: Controlled way to update data with validation logic
+    public void setBasicSalary(double basicSalary) {
+        if (basicSalary > 0) { // Example validation
+            this.basicSalary = basicSalary;
+        }
+    }
 
-    // --- Abstract Methods ---
+    public void setLastName(String lastName) {
+        if (lastName != null && !lastName.trim().isEmpty()) {
+            this.lastName = lastName;
+        }
+    }
+
+    public void setTotalBenefits(double totalBenefits) {
+        this.totalBenefits = totalBenefits;
+    }
+
+    // 7. The Abstract Method: This is the OOP Abstraction
     // Subclasses like regularEmployee MUST implement these
-    public abstract double calculateGross();
+    // Differently than a "Regular" employee.
+    @Override
+    public abstract double calculateGrossPay();
 }

@@ -9,5 +9,5 @@ package model;
  * @author SunnyEljohn
  */
 public interface IPayable {
-    double getcalculateGrossWeeklySalary();
+    double calculateGrossPay(); // The "What": Anything payable must calculate gross pay.
 }
