@@ -1,13 +1,22 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 // This class represents an Employee with relevant salary details
-public class Employee {
+public abstract class Employee {
 
     // Employee ID (e.g., unique identifier for each employee)
     private String employeeID;
 
     // Full name of the employee
     private String name;
+    
+    // Leave
+    private List<Leave> leaveHistory;
+    private int sickLeaveBalance = 5;      // Default 5 days
+    private int vacationLeaveBalance = 10; // Default 10 days
+    private int emergencyLeaveBalance = 3; // Default 3 days
 
     // Basic monthly salary of the employee
     private double basicSalary;
@@ -17,38 +26,43 @@ public class Employee {
 
     // Hourly rate used for computing pay based on hours worked
     private double hourlyRate;
+    
+    // Leave Request
+    private int leavesTaken;
 
     // Constructor to initialize all attributes of the Employee object
-    public Employee(String employeeID, String name, double basicSalary, double semiMonthlyRate, double hourlyRate) {
+    public Employee(String employeeID, String name) {
         this.employeeID = employeeID;
         this.name = name;
-        this.basicSalary = basicSalary;
-        this.semiMonthlyRate = semiMonthlyRate;
-        this.hourlyRate = hourlyRate;
+        this.leaveHistory = new ArrayList<>(); 
+    }
+    
+    public abstract double calculateGrossWeeklySalary();
+    
+    // Add the leave object to the list
+    public void fileLeave(Leave leave) {
+        this.leaveHistory.add(leave);
     }
 
-    // Getter method to retrieve employee ID
-    public String getEmployeeID() {
-        return employeeID;
+    // to count total days taken
+    public int getTotalLeavesTaken() {
+        int total = 0;
+        for (Leave l : leaveHistory) {
+            total += l.getDays();
+        }
+        return total;
     }
 
-    // Getter method to retrieve employee name
-    public String getName() {
-        return name;
-    }
-
-    // Getter method to retrieve the basic salary
-    public double getBasicSalary() {
-        return basicSalary;
-    }
-
-    // Getter method to retrieve the semi-monthly rate
-    public double getSemiMonthlyRate() {
-        return semiMonthlyRate;
-    }
-
-    // Getter method to retrieve the hourly rate
-    public double getHourlyRate() {
-        return hourlyRate;
-    }
+    
+    public int getSickLeaveBalance() { return sickLeaveBalance; }
+    public void setSickLeaveBalance(int balance) { this.sickLeaveBalance = balance; }
+    public int getVacationLeaveBalance() { return vacationLeaveBalance; }
+    public void setVacationLeaveBalance(int balance) { this.vacationLeaveBalance = balance; }
+    public int getEmergencyLeaveBalance() { return emergencyLeaveBalance; }
+    public void setEmergencyLeaveBalance(int balance) { this.emergencyLeaveBalance = balance; }
+    
+    // Getters
+    public String getEmployeeID() { return employeeID; }
+    public String getName() { return name; }
+    public List<Leave> getLeaveHistory() { return leaveHistory; }
 }

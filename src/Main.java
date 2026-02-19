@@ -1,6 +1,8 @@
 // Import the custom DashboardPanel class from the gui package
 import gui.DashboardPanel;
 
+import java.time.LocalDate;
+
 // Import the custom LoginPanel class from the gui package (currently commented out in use)
 import gui.LoginPanel;
 

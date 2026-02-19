@@ -398,6 +398,30 @@ public class FileHandler {
         return users;
     }
 
+    // ======== Polymorphism Integration ========
+
+    public List<Employee> getEmployeesAsObjects() {
+        List<Employee> employeeList = new ArrayList<>();
+
+        for (String[] row : employeeData) {
+            
+            // 1. Extract the ID and Name
+            String id = row[0];
+            String name = row[2] + " " + row[1]; 
+
+            // 2. Parse the salary numbers
+            double basicSalary = safeParseDouble(row[13], 0.0);
+            double semiMonthlyRate = safeParseDouble(row[17], 0.0);
+            double hourlyRate = safeParseDouble(row[18], 0.0);
+
+            // 3. Polymorphic Object
+            Employee emp = new RegularEmployee(id, name, basicSalary, semiMonthlyRate, hourlyRate);
+            
+            employeeList.add(emp);
+        }
+        
+        return employeeList;
+    }
     
   
 }
