@@ -1,7 +1,7 @@
 package gui;
 
-import model.FileHandler;
-import model.Leave;
+import service.LeaveService;
+import dao.LeaveDAO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -11,148 +11,155 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.ArrayList;
 
 /**
- * LeavePanel — Admin view for managing employee leave requests.
- * Matches the gradient style of AttendancePanel.
- *
- * Features:
- *  • View all leave requests in a table
- *  • Search by Employee ID
- *  • File a new leave request (dialog form)
- *  • Approve or Reject a selected pending request
- *  • Data persisted to data/leave.txt via FileHandler
+ * LeavePanel — Admin GUI for leave management.
+ * Reason field removed as per team feedback — leave type is self-explanatory.
+ * Row format: employeeId, leaveID, date, type, days, status
  */
 public class LeavePanel extends JPanel {
 
-    // ── Data ────────────────────────────────────────────────────────────────
-    private final FileHandler fileHandler;
-    private List<String[]> allLeaveData;
+    private final LeaveService leaveService;
 
-    // ── Table ────────────────────────────────────────────────────────────────
     private JTable table;
     private DefaultTableModel model;
-
-    // ── Search ───────────────────────────────────────────────────────────────
     private JTextField searchField;
 
-    // ── Column indices ───────────────────────────────────────────────────────
-    // leave.txt row: employeeId, leaveID, date, type, days, reason, status
-    private static final int COL_EMP_ID  = 0;
+    // ── Column indices (reason removed, status is now col 5) ─────────────────
+    private static final int COL_EMP_ID   = 0;
     private static final int COL_LEAVE_ID = 1;
-    private static final int COL_DATE    = 2;
-    private static final int COL_TYPE    = 3;
-    private static final int COL_DAYS    = 4;
-    private static final int COL_REASON  = 5;
-    private static final int COL_STATUS  = 6;
+    private static final int COL_DATE     = 2;
+    private static final int COL_TYPE     = 3;
+    private static final int COL_DAYS     = 4;
+    private static final int COL_STATUS   = 5;
 
-    // ── Colors (matches AttendancePanel) ─────────────────────────────────────
-    private final Color gradientStart = new Color(255, 204, 229);
-    private final Color gradientEnd   = new Color(255, 229, 180);
-    private final Color headerBlue    = new Color(33, 150, 243);
+    // ── Colors ────────────────────────────────────────────────────────────────
+    private final Color HEADER_COLOR = new Color(20, 50, 110);
+    private final Color ROW_ALT      = new Color(220, 230, 250);
+    private final Color APPROVED_CLR = new Color(200, 240, 210);
+    private final Color REJECTED_CLR = new Color(255, 210, 210);
+
+    // ── Summary card labels ───────────────────────────────────────────────────
+    private JLabel totalLabel, pendingLabel, approvedLabel, rejectedLabel;
 
     // ════════════════════════════════════════════════════════════════════════
-    //  Constructor
-    // ════════════════════════════════════════════════════════════════════════
-    public LeavePanel(FileHandler fileHandler) {
-        this.fileHandler = fileHandler;
-        setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(15, 15, 15, 15));
+    public LeavePanel(LeaveService leaveService) {
+        this.leaveService = leaveService;
+        setLayout(new BorderLayout(10, 10));
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setOpaque(false);
 
-        // Load saved leave records
-        fileHandler.readLeaveFile();
-        allLeaveData = fileHandler.getAllLeaveData();
-
-        // Build table
-        String[] columns = {"Employee #", "Leave ID", "Date", "Type", "Days", "Reason", "Status"};
+        // ── Table — no Reason column ──────────────────────────────────────────
+        String[] columns = {"Employee #", "Leave ID", "Date", "Type", "Days", "Status"};
         model = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         table = new JTable(model);
-        table.setRowHeight(26);
+        table.setRowHeight(28);
         table.setFillsViewportHeight(true);
-        table.setShowGrid(true);
-        table.setDefaultRenderer(Object.class, new LeaveTableCellRenderer());
-        table.getTableHeader().setDefaultRenderer(new LeaveTableHeaderRenderer());
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 2));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setBackground(Color.WHITE);
+        table.setSelectionBackground(new Color(100, 149, 237));
+        table.setSelectionForeground(Color.WHITE);
+        table.setDefaultRenderer(Object.class, new LeaveCellRenderer());
+
+        table.getTableHeader().setBackground(HEADER_COLOR);
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 35));
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.getVerticalScrollBar().setUI(new ModernScrollBarUI());
         scrollPane.getHorizontalScrollBar().setUI(new ModernScrollBarUI());
 
-        add(buildTopPanel(), BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        JPanel tableCard = new JPanel(new BorderLayout());
+        tableCard.setBackground(Color.WHITE);
+        tableCard.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 215, 240), 1, true),
+            new EmptyBorder(5, 5, 5, 5)
+        ));
+        tableCard.add(table.getTableHeader(), BorderLayout.NORTH);
+        tableCard.add(scrollPane, BorderLayout.CENTER);
+
+        add(buildTopPanel(),  BorderLayout.NORTH);
+        add(tableCard,        BorderLayout.CENTER);
         add(buildActionPanel(), BorderLayout.SOUTH);
 
-        refreshTable(allLeaveData);
+        refreshTable();
+    }
+
+    // ── Backward-compatible constructor ───────────────────────────────────────
+    public LeavePanel(model.FileHandler fileHandler) {
+        this(new LeaveService(new LeaveDAO()));
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    //  Top panel: search bar + File Leave button
+    //  Top panel
     // ════════════════════════════════════════════════════════════════════════
     private JPanel buildTopPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setOpaque(false);
 
-        // ── Summary cards ────────────────────────────────────────────────────
-        JPanel summaryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        summaryPanel.setOpaque(false);
-        summaryPanel.add(makeSummaryCard("📋 Total Requests", countByStatus(null)));
-        summaryPanel.add(makeSummaryCard("⏳ Pending",         countByStatus("Pending")));
-        summaryPanel.add(makeSummaryCard("✅ Approved",        countByStatus("Approved")));
-        summaryPanel.add(makeSummaryCard("❌ Rejected",        countByStatus("Rejected")));
+        // Summary cards
+        JPanel cardsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        cardsRow.setOpaque(false);
+        cardsRow.add(makeSummaryCard("Total Requests", "📋", null));
+        cardsRow.add(makeSummaryCard("Pending",        "⏳", "Pending"));
+        cardsRow.add(makeSummaryCard("Approved",       "✅", "Approved"));
+        cardsRow.add(makeSummaryCard("Rejected",       "❌", "Rejected"));
 
-        // ── Search bar + File Leave button ───────────────────────────────────
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        searchPanel.setOpaque(false);
+        // Search row
+        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchRow.setOpaque(false);
+
+        JLabel searchLbl = new JLabel("Search Employee ID:");
+        searchLbl.setForeground(Color.WHITE);
+        searchLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
         searchField = new JTextField(15);
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        searchField.setPreferredSize(new Dimension(180, 30));
-        searchField.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+        searchField.setPreferredSize(new Dimension(180, 32));
 
-        JButton searchBtn = makeRoundButton("Search", new Color(30, 144, 255), 80, 36);
+        JButton searchBtn = makeButton("Search",      new Color(30, 144, 255), 90,  32);
+        JButton clearBtn  = makeButton("Clear",       new Color(120, 120, 120), 70, 32);
+        JButton fileBtn   = makeButton("+ File Leave", new Color(56, 142, 60), 120, 32);
+
         searchBtn.addActionListener(e -> search());
         searchField.addActionListener(e -> search());
+        clearBtn.addActionListener(e -> { searchField.setText(""); refreshTable(); });
+        fileBtn.addActionListener(e -> openFileLeaveDialog());
 
-        JButton clearBtn = makeRoundButton("Clear", new Color(150, 150, 150), 70, 36);
-        clearBtn.addActionListener(e -> {
-            searchField.setText("");
-            refreshTable(allLeaveData);
-        });
+        searchRow.add(searchLbl);
+        searchRow.add(searchField);
+        searchRow.add(searchBtn);
+        searchRow.add(clearBtn);
+        searchRow.add(Box.createHorizontalStrut(20));
+        searchRow.add(fileBtn);
 
-        JButton fileLeaveBtn = makeRoundButton("+ File Leave", new Color(76, 175, 80), 110, 36);
-        fileLeaveBtn.addActionListener(e -> openFileLeaveDialog());
-
-        searchPanel.add(new JLabel("Search Employee ID:"));
-        searchPanel.add(searchField);
-        searchPanel.add(searchBtn);
-        searchPanel.add(clearBtn);
-        searchPanel.add(Box.createHorizontalStrut(30));
-        searchPanel.add(fileLeaveBtn);
-
-        panel.add(summaryPanel, BorderLayout.NORTH);
-        panel.add(searchPanel, BorderLayout.CENTER);
+        panel.add(cardsRow,  BorderLayout.NORTH);
+        panel.add(searchRow, BorderLayout.SOUTH);
         return panel;
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    //  Bottom action panel: Approve / Reject selected row
+    //  Action panel
     // ════════════════════════════════════════════════════════════════════════
     private JPanel buildActionPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         panel.setOpaque(false);
 
-        JButton approveBtn = makeRoundButton("✔ Approve", new Color(56, 142, 60), 120, 38);
-        approveBtn.addActionListener(e -> updateSelectedStatus("Approved"));
+        JButton approveBtn = makeButton("✔ Approve", new Color(56, 142, 60),  130, 38);
+        JButton rejectBtn  = makeButton("✘ Reject",  new Color(211, 47, 47),  110, 38);
 
-        JButton rejectBtn = makeRoundButton("✘ Reject", new Color(211, 47, 47), 110, 38);
-        rejectBtn.addActionListener(e -> updateSelectedStatus("Rejected"));
+        approveBtn.addActionListener(e -> updateSelectedStatus("Approved"));
+        rejectBtn.addActionListener(e  -> updateSelectedStatus("Rejected"));
 
         panel.add(approveBtn);
         panel.add(rejectBtn);
@@ -160,37 +167,35 @@ public class LeavePanel extends JPanel {
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    //  Dialog: File a new leave request
+    //  File Leave dialog — no Reason field
     // ════════════════════════════════════════════════════════════════════════
     private void openFileLeaveDialog() {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "File Leave Request", true);
-        dialog.setSize(420, 360);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "File Leave Request", true);
+        dialog.setSize(400, 300);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
 
-        // ── Form ─────────────────────────────────────────────────────────────
         JPanel form = new JPanel(new GridBagLayout());
-        form.setBorder(new EmptyBorder(20, 25, 10, 25));
         form.setBackground(Color.WHITE);
+        form.setBorder(new EmptyBorder(20, 25, 10, 25));
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(6, 6, 6, 6);
+        gc.insets = new Insets(8, 6, 8, 6);
         gc.anchor = GridBagConstraints.WEST;
         gc.fill   = GridBagConstraints.HORIZONTAL;
 
-        JTextField empIdField  = new JTextField(15);
-        JTextField dateField   = new JTextField("YYYY-MM-DD", 15);
+        JTextField empIdField = new JTextField(15);
+        JTextField dateField  = new JTextField("YYYY-MM-DD", 15);
         JComboBox<String> typeBox = new JComboBox<>(new String[]{"Sick", "Vacation", "Emergency"});
-        JSpinner daysSpinner   = new JSpinner(new SpinnerNumberModel(1, 1, 30, 1));
-        JTextField reasonField = new JTextField(15);
+        JSpinner daysSpinner  = new JSpinner(new SpinnerNumberModel(1, 1, 30, 1));
 
+        // ── No Reason field ───────────────────────────────────────────────────
         Object[][] rows = {
-            {"Employee ID *",  empIdField},
-            {"Start Date *",   dateField},
-            {"Leave Type *",   typeBox},
-            {"Number of Days *", daysSpinner},
-            {"Reason",         reasonField}
+            {"Employee ID *",    empIdField},
+            {"Start Date *",     dateField},
+            {"Leave Type *",     typeBox},
+            {"Number of Days *", daysSpinner}
         };
-
         for (int i = 0; i < rows.length; i++) {
             gc.gridx = 0; gc.gridy = i; gc.weightx = 0;
             form.add(new JLabel((String) rows[i][0]), gc);
@@ -198,91 +203,89 @@ public class LeavePanel extends JPanel {
             form.add((Component) rows[i][1], gc);
         }
 
-        // ── Buttons ──────────────────────────────────────────────────────────
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnPanel.setBackground(Color.WHITE);
-        JButton submitBtn = makeRoundButton("Submit", new Color(33, 150, 243), 90, 34);
-        JButton cancelBtn = makeRoundButton("Cancel", new Color(150, 150, 150), 80, 34);
+        JButton submitBtn = makeButton("Submit", new Color(33, 150, 243), 90, 34);
+        JButton cancelBtn = makeButton("Cancel", new Color(150, 150, 150), 80, 34);
         cancelBtn.addActionListener(e -> dialog.dispose());
 
         submitBtn.addActionListener(e -> {
             String empId  = empIdField.getText().trim();
             String dateStr = dateField.getText().trim();
             String type   = (String) typeBox.getSelectedItem();
-            int days      = (int) daysSpinner.getValue();
-            String reason = reasonField.getText().trim();
+            int    days   = (int) daysSpinner.getValue();
 
-            // Validate
             if (empId.isEmpty() || dateStr.isEmpty() || dateStr.equals("YYYY-MM-DD")) {
-                JOptionPane.showMessageDialog(dialog, "Employee ID and Date are required.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Employee ID and Date are required.",
+                        "Validation Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             LocalDate date;
-            try {
-                date = LocalDate.parse(dateStr);
-            } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "Date must be in YYYY-MM-DD format.", "Invalid Date", JOptionPane.ERROR_MESSAGE);
+            try { date = LocalDate.parse(dateStr); }
+            catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(dialog, "Date must be YYYY-MM-DD format.",
+                        "Invalid Date", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            // Build leave & persist
-            String leaveID = "LV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            Leave leave = new Leave(leaveID, empId, date, type, days, reason);
-            String[] row = leave.toRow();
+            // Check balance
+            int balance = leaveService.getRemainingBalance(empId, type);
+            if (days > balance) {
+                JOptionPane.showMessageDialog(dialog,
+                        "Not enough " + type + " leave balance.\nRemaining: " + balance + " day(s).",
+                        "Insufficient Balance", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-            boolean saved = fileHandler.appendLeave(row);
+            // ── No reason passed ──────────────────────────────────────────────
+            boolean saved = leaveService.fileLeave(empId, date, type, days);
             if (saved) {
-                allLeaveData.add(row);
-                refreshTable(allLeaveData);
-                refreshSummaryCards();
-                JOptionPane.showMessageDialog(dialog, "Leave request filed successfully!\nLeave ID: " + leaveID, "Success", JOptionPane.INFORMATION_MESSAGE);
+                refreshTable();
+                JOptionPane.showMessageDialog(dialog, "Leave request filed successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
             } else {
-                JOptionPane.showMessageDialog(dialog, "Failed to save leave request. Check data/leave.txt.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog,
+                        "Failed to save. Check that the date is not in the past.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
         btnPanel.add(submitBtn);
         btnPanel.add(cancelBtn);
-
-        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(form,     BorderLayout.CENTER);
         dialog.add(btnPanel, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    //  Approve / Reject selected row
+    //  Approve / Reject
     // ════════════════════════════════════════════════════════════════════════
     private void updateSelectedStatus(String newStatus) {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a leave request first.", "No Selection", JOptionPane.WARNING_MESSAGE);
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a leave request first.",
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        String currentStatus = (String) model.getValueAt(selectedRow, COL_STATUS);
+        String currentStatus = (String) model.getValueAt(row, COL_STATUS);
         if (!"Pending".equals(currentStatus)) {
-            JOptionPane.showMessageDialog(this, "Only 'Pending' requests can be updated.", "Already Processed", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Only Pending requests can be updated.",
+                    "Already Processed", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+        String leaveId = (String) model.getValueAt(row, COL_LEAVE_ID);
+        boolean ok = "Approved".equals(newStatus)
+                ? leaveService.approveLeave(leaveId)
+                : leaveService.rejectLeave(leaveId);
 
-        String leaveId = (String) model.getValueAt(selectedRow, COL_LEAVE_ID);
-        boolean updated = fileHandler.updateLeaveStatus(leaveId, newStatus);
-
-        if (updated) {
-            model.setValueAt(newStatus, selectedRow, COL_STATUS);
-            // Update local data list too
-            for (String[] row : allLeaveData) {
-                if (row[COL_LEAVE_ID].equals(leaveId)) {
-                    row[COL_STATUS] = newStatus;
-                    break;
-                }
-            }
+        if (ok) {
+            model.setValueAt(newStatus, row, COL_STATUS);
             refreshSummaryCards();
-            JOptionPane.showMessageDialog(this, "Leave request " + newStatus.toLowerCase() + ".", "Updated", JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to update status.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Leave request " + newStatus.toLowerCase() + ".",
+                    "Updated", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -291,96 +294,78 @@ public class LeavePanel extends JPanel {
     // ════════════════════════════════════════════════════════════════════════
     private void search() {
         String input = searchField.getText().trim().toLowerCase();
-        if (input.isEmpty()) {
-            refreshTable(allLeaveData);
-            return;
-        }
+        if (input.isEmpty()) { refreshTable(); return; }
+
         List<String[]> filtered = new ArrayList<>();
-        for (String[] row : allLeaveData) {
-            if (row[COL_EMP_ID].toLowerCase().contains(input)) {
-                filtered.add(row);
-            }
-        }
-        if (filtered.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No leave records found for: " + input, "No Results", JOptionPane.INFORMATION_MESSAGE);
-        }
-        refreshTable(filtered);
+        for (String[] r : leaveService.getAllLeaves())
+            if (r[COL_EMP_ID].toLowerCase().contains(input)) filtered.add(r);
+
+        if (filtered.isEmpty())
+            JOptionPane.showMessageDialog(this, "No records found for: " + input,
+                    "No Results", JOptionPane.INFORMATION_MESSAGE);
+
+        model.setRowCount(0);
+        for (String[] r : filtered) model.addRow(r);
     }
 
     // ════════════════════════════════════════════════════════════════════════
     //  Helpers
     // ════════════════════════════════════════════════════════════════════════
-    private void refreshTable(List<String[]> data) {
+    private void refreshTable() {
         model.setRowCount(0);
-        for (String[] row : data) {
-            model.addRow(row);
-        }
+        for (String[] r : leaveService.getAllLeaves()) model.addRow(r);
+        refreshSummaryCards();
     }
 
-    private int countByStatus(String status) {
-        if (status == null) return allLeaveData.size();
-        int count = 0;
-        for (String[] row : allLeaveData) {
-            if (row[COL_STATUS].equalsIgnoreCase(status)) count++;
-        }
-        return count;
+    private void refreshSummaryCards() {
+        if (totalLabel    != null) totalLabel.setText(String.valueOf(leaveService.countByStatus(null)));
+        if (pendingLabel  != null) pendingLabel.setText(String.valueOf(leaveService.countByStatus("Pending")));
+        if (approvedLabel != null) approvedLabel.setText(String.valueOf(leaveService.countByStatus("Approved")));
+        if (rejectedLabel != null) rejectedLabel.setText(String.valueOf(leaveService.countByStatus("Rejected")));
     }
 
-    // Summary card labels are kept as fields so we can refresh them
-    private JLabel totalLabel, pendingLabel, approvedLabel, rejectedLabel;
-
-    private JPanel makeSummaryCard(String title, int count) {
+    private JPanel makeSummaryCard(String title, String icon, String statusFilter) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
-            new EmptyBorder(6, 14, 6, 14)
+            BorderFactory.createLineBorder(new Color(180, 200, 240), 1, true),
+            new EmptyBorder(8, 16, 8, 16)
         ));
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel titleLbl = new JLabel(icon + " " + title);
+        titleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        titleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel countLabel = new JLabel(String.valueOf(count));
-        countLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        countLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel countLbl = new JLabel(String.valueOf(leaveService.countByStatus(statusFilter)));
+        countLbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        countLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Cache for refresh
-        if (title.contains("Total"))    totalLabel    = countLabel;
-        if (title.contains("Pending"))  pendingLabel  = countLabel;
-        if (title.contains("Approved")) approvedLabel = countLabel;
-        if (title.contains("Rejected")) rejectedLabel = countLabel;
+        if (title.contains("Total"))    totalLabel    = countLbl;
+        if (title.contains("Pending"))  pendingLabel  = countLbl;
+        if (title.contains("Approved")) approvedLabel = countLbl;
+        if (title.contains("Rejected")) rejectedLabel = countLbl;
 
-        card.add(titleLabel);
-        card.add(countLabel);
+        card.add(titleLbl);
+        card.add(countLbl);
         return card;
     }
 
-    private void refreshSummaryCards() {
-        if (totalLabel    != null) totalLabel.setText(String.valueOf(countByStatus(null)));
-        if (pendingLabel  != null) pendingLabel.setText(String.valueOf(countByStatus("Pending")));
-        if (approvedLabel != null) approvedLabel.setText(String.valueOf(countByStatus("Approved")));
-        if (rejectedLabel != null) rejectedLabel.setText(String.valueOf(countByStatus("Rejected")));
-    }
-
-    // Rounded colored button (matches AttendancePanel style)
-    private JButton makeRoundButton(String text, Color bgColor, int w, int h) {
+    private JButton makeButton(String text, Color bg, int w, int h) {
         JButton btn = new JButton(text);
+        btn.setPreferredSize(new Dimension(w, h));
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
-        btn.setOpaque(false);
-        btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btn.setPreferredSize(new Dimension(w, h));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
             @Override public void paint(Graphics g, JComponent c) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bgColor);
-                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 20, 20);
+                g2.setColor(bg);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 18, 18);
                 super.paint(g2, c);
                 g2.dispose();
             }
@@ -388,68 +373,29 @@ public class LeavePanel extends JPanel {
         return btn;
     }
 
-    // ── Gradient background ──────────────────────────────────────────────────
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        GradientPaint gp = new GradientPaint(0, 0, gradientStart, 0, getHeight(), gradientEnd);
-        g2d.setPaint(gp);
-        g2d.fillRect(0, 0, getWidth(), getHeight());
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  Cell renderer — color-coded status + striped rows
-    // ════════════════════════════════════════════════════════════════════════
-    private class LeaveTableCellRenderer extends DefaultTableCellRenderer {
+    // ── Cell renderer ─────────────────────────────────────────────────────────
+    private class LeaveCellRenderer extends DefaultTableCellRenderer {
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus,
-                                                       int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            if (!isSelected) {
-                String status = (String) model.getValueAt(row, COL_STATUS);
-                if ("Approved".equals(status)) {
-                    c.setBackground(new Color(232, 245, 233)); // light green
-                } else if ("Rejected".equals(status)) {
-                    c.setBackground(new Color(255, 235, 238)); // light red
-                } else {
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(230, 240, 255));
-                }
+        public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean sel, boolean focus, int row, int col) {
+            Component c = super.getTableCellRendererComponent(t, value, sel, focus, row, col);
+            if (!sel) {
+                String status = model.getRowCount() > row
+                        ? (String) model.getValueAt(row, COL_STATUS) : "";
+                if ("Approved".equals(status))      c.setBackground(APPROVED_CLR);
+                else if ("Rejected".equals(status)) c.setBackground(REJECTED_CLR);
+                else c.setBackground(row % 2 == 0 ? Color.WHITE : ROW_ALT);
             }
             setHorizontalAlignment(SwingConstants.CENTER);
-            c.setFont(new Font("SansSerif", Font.PLAIN, 13));
             return c;
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    //  Header renderer (matches AttendancePanel)
-    // ════════════════════════════════════════════════════════════════════════
-    private class LeaveTableHeaderRenderer extends DefaultTableCellRenderer {
-        public LeaveTableHeaderRenderer() {
-            setOpaque(true);
-            setBackground(headerBlue);
-            setForeground(Color.WHITE);
-            setFont(new Font("SansSerif", Font.BOLD, 14));
-            setHorizontalAlignment(SwingConstants.CENTER);
-        }
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus,
-                                                       int row, int column) {
-            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            return this;
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════════════
-    //  Minimal scrollbar UI (matches AttendancePanel)
-    // ════════════════════════════════════════════════════════════════════════
+    // ── Scrollbar ─────────────────────────────────────────────────────────────
     private static class ModernScrollBarUI extends BasicScrollBarUI {
         @Override protected void configureScrollBarColors() {
-            thumbColor = new Color(180, 180, 180);
-            trackColor = new Color(0, 0, 0, 0);
+            thumbColor = new Color(150, 180, 220);
+            trackColor = Color.WHITE;
         }
         @Override protected JButton createDecreaseButton(int o) { return invisible(); }
         @Override protected JButton createIncreaseButton(int o) { return invisible(); }

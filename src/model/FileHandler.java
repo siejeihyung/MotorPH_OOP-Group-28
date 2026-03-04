@@ -34,6 +34,10 @@ public class FileHandler {
     // File paths
     private final String EMPLOYEE_FILE = folderPath + "/employee.txt";
     private final String ATTENDANCE_FILE = folderPath + "/attendance.txt";
+    
+    // ── NEW: Leave file path and data storage ────────────────────────────────
+    private final String LEAVE_FILE = folderPath + "/leave.txt";
+    private final List<String[]> leaveData = new ArrayList<>();
 
     // ======== Read Methods ========
 
@@ -94,26 +98,25 @@ public class FileHandler {
         }
         
         // Employee CSV (if admin check failed)
-        // This part allows employee to use ID as udername and Last name as passwords 
-            readEmployeeFile();
+        // This part allows employee to use ID as username and Last name as password 
+        readEmployeeFile();
             
-        if (employeeData != null){
+        if (employeeData != null) {
             for (String[] employee : employeeData) {
-                if (employee.length > 1){
-                String employeeId = employee[0].trim();
-                String lastName = employee[1].trim(); // Using Last Name as Password
+                if (employee.length > 1) {
+                    String employeeId = employee[0].trim();
+                    String lastName = employee[1].trim();
 
-                // check if username matches ID and password matches Last name
-                if (employeeId.equals(username) && lastName.equalsIgnoreCase(password)) {
-                    System.out.println("Loggin in: " + lastName);
-                    return true;
+                    if (employeeId.equals(username) && lastName.equalsIgnoreCase(password)) {
+                        System.out.println("Logging in: " + lastName);
+                        return true;
+                    }
+                }
             }
-        }
-    }
-}       
+        }       
         System.out.println("No match found for: " + username);
-        return false; // No match
-}
+        return false;
+    }
         
     // Reads and parses the attendance file using OpenCSV
     public void readAttendanceFile() {
@@ -140,6 +143,27 @@ public class FileHandler {
 
         } catch (IOException | CsvValidationException e) {
             System.out.println("❌ Error reading attendance.txt: " + e.getMessage());
+        }
+    }
+
+    // ── NEW: Reads leave.txt into leaveData ──────────────────────────────────
+    // Row format: employeeId, leaveID, date, type, days, reason, status
+    public void readLeaveFile() {
+        leaveData.clear();
+        File file = new File(LEAVE_FILE);
+        if (!file.exists()) {
+            System.out.println("ℹ️  leave.txt not found — will be created on first save.");
+            return;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                leaveData.add(line.split(",", -1));
+            }
+            System.out.println("✅ leave.txt loaded: " + leaveData.size() + " rows");
+        } catch (IOException e) {
+            System.out.println("❌ Error reading leave.txt: " + e.getMessage());
         }
     }
 
@@ -183,6 +207,21 @@ public class FileHandler {
         }
     }
 
+    // ── NEW: Overwrites leave.txt with the full leaveData list ───────────────
+    public void writeLeaveFile(List<String[]> data) {
+        try (ICSVWriter writer = new CSVWriterBuilder(new FileWriter(LEAVE_FILE))
+                .withSeparator(',')
+                .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
+                .build()) {
+            for (String[] row : data) {
+                writer.writeNext(row);
+            }
+            System.out.println("✅ leave.txt written: " + data.size() + " rows");
+        } catch (IOException e) {
+            System.out.println("❌ Error writing leave.txt: " + e.getMessage());
+        }
+    }
+
     // ======== Update & Append Methods ========
 
     // Appends a new employee row to the employee file
@@ -209,7 +248,7 @@ public class FileHandler {
         for (String[] row : employeeData) {
             if (row[idIndex].equals(employeeId)) {
                 row[columnIndex] = newValue;
-                writeEmployeeFile(employeeData); // Save changes
+                writeEmployeeFile(employeeData);
                 return true;
             }
         }
@@ -229,7 +268,35 @@ public class FileHandler {
             String[] row = attendanceData.get(i);
             if (row[0].equals(employeeId) && row[1].equals(date)) {
                 attendanceData.set(i, newRow);
-                writeAttendanceFile(attendanceData); // Save changes
+                writeAttendanceFile(attendanceData);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ── NEW: Appends one leave row to leave.txt without rewriting the whole file
+    public boolean appendLeave(String[] leaveRow) {
+        new File(folderPath).mkdirs(); // Ensure data/ folder exists
+        try (ICSVWriter writer = new CSVWriterBuilder(new FileWriter(LEAVE_FILE, true))
+                .withSeparator(',')
+                .withQuoteChar(CSVWriter.NO_QUOTE_CHARACTER)
+                .build()) {
+            writer.writeNext(leaveRow);
+            leaveData.add(leaveRow); // Keep in-memory list in sync
+            return true;
+        } catch (IOException e) {
+            System.out.println("❌ Error appending to leave.txt: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ── NEW: Updates the status of a leave record by leaveID ─────────────────
+    public boolean updateLeaveStatus(String leaveID, String newStatus) {
+        for (String[] row : leaveData) {
+            if (row.length > 1 && row[1].equals(leaveID)) {
+                row[6] = newStatus;
+                writeLeaveFile(leaveData);
                 return true;
             }
         }
@@ -265,7 +332,7 @@ public class FileHandler {
                 return new Benefits(rice, phone, clothing);
             }
         }
-        return new Benefits(0.0, 0.0, 0.0); // Default if not found
+        return new Benefits(0.0, 0.0, 0.0);
     }
 
     // Parses string to double with fallback in case of error
@@ -293,17 +360,21 @@ public class FileHandler {
 
     // ======== Getters ========
 
-    // Returns full employee data
-    public List<String[]> getEmployeeData() {
-        return employeeData;
+    public List<String[]> getEmployeeData() { return employeeData; }
+    public List<String[]> getAttendanceData() { return attendanceData; }
+
+    // ── NEW: Returns all leave rows ───────────────────────────────────────────
+    public List<String[]> getAllLeaveData() { return leaveData; }
+
+    // ── NEW: Returns leave rows for a specific employee ───────────────────────
+    public List<String[]> getLeavesByEmployeeId(String employeeId) {
+        List<String[]> result = new ArrayList<>();
+        for (String[] row : leaveData) {
+            if (row.length > 0 && row[0].equals(employeeId)) result.add(row);
+        }
+        return result;
     }
 
-    // Returns full attendance data
-    public List<String[]> getAttendanceData() {
-        return attendanceData;
-    }
-
-    // Returns predefined headers for employee file
     public String[] getEmployeeHeaders() {
         return new String[]{
                 "Employee #", "Last Name", "First Name", "Birthday", "Address", "Phone Number",
@@ -313,12 +384,8 @@ public class FileHandler {
         };
     }
 
-    // Returns attendance file headers
-    public List<String> getAttendanceHeaders() {
-        return attendanceHeaders;
-    }
+    public List<String> getAttendanceHeaders() { return attendanceHeaders; }
 
-    // Returns employee data row by ID
     public String[] getEmployeeById(String employeeId) {
         int idIndex = employeeHeaders.indexOf("Employee #");
         for (String[] row : employeeData) {
@@ -327,16 +394,12 @@ public class FileHandler {
         return null;
     }
 
-
-    // ✅ Check if a username already exists in the credentials file
     public boolean userExists(String username) {
         try (BufferedReader reader = new BufferedReader(new FileReader(credentialsFilePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 2 && parts[0].trim().equals(username)) {
-                    return true;
-                }
+                if (parts.length == 2 && parts[0].trim().equals(username)) return true;
             }
         } catch (IOException e) {
             System.err.println("Error reading credentials file: " + e.getMessage());
@@ -344,13 +407,11 @@ public class FileHandler {
         return false;
     }
 
-    // ✅ Add a new user to the credentials file
     public boolean addUser(String username, String password) {
         if (username.contains(",") || password.contains(",")) {
             System.err.println("Username and password must not contain commas.");
             return false;
         }
-
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(credentialsFilePath, true))) {
             writer.write(username + "," + password);
             writer.newLine();
@@ -361,11 +422,9 @@ public class FileHandler {
         }
     }
 
-    // ✅ (Already mentioned) update user password
     public boolean updateUserPassword(String username, String newPassword) {
         List<String> lines = new ArrayList<>();
         boolean updated = false;
-
         try (BufferedReader reader = new BufferedReader(new FileReader(credentialsFilePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -381,7 +440,6 @@ public class FileHandler {
             System.err.println("Error reading file: " + e.getMessage());
             return false;
         }
-
         if (updated) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(credentialsFilePath))) {
                 for (String updatedLine : lines) {
@@ -393,27 +451,20 @@ public class FileHandler {
                 System.err.println("Error writing file: " + e.getMessage());
             }
         }
-
         return false;
     }
 
-    // ✅ Return list of usernames
     public List<String> getAllUsers() {
         List<String> users = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(credentialsFilePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 2) {
-                    users.add(parts[0].trim());
-                }
+                if (parts.length == 2) users.add(parts[0].trim());
             }
         } catch (IOException e) {
             System.err.println("Error reading users: " + e.getMessage());
         }
         return users;
     }
-
-    
-  
 }
