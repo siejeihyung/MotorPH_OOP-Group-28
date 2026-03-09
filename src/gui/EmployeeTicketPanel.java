@@ -5,6 +5,8 @@
 package gui;
 
 import dao.TicketDAO;
+import dao.EmployeeDAO;
+import service.EmployeeService;
 import model.Ticket;
 
 import javax.swing.*;
@@ -12,7 +14,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
-
 /**
  *
  * @author anton
@@ -22,6 +23,7 @@ import java.util.List;
 public class EmployeeTicketPanel extends JPanel {
 
     private final String       employeeId;
+    private final String       employeeName; // ── Use name as sender, not ID
     private final TicketDAO    ticketDAO = new TicketDAO();
     private DefaultTableModel  tableModel;
 
@@ -29,6 +31,9 @@ public class EmployeeTicketPanel extends JPanel {
 
     public EmployeeTicketPanel(String employeeId) {
         this.employeeId = employeeId;
+        // ── Resolve actual name so sender shows name, not ID ──────────────────
+        EmployeeService empService = new EmployeeService(new EmployeeDAO());
+        this.employeeName = empService.getEmployeeName(employeeId);
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setOpaque(false);
@@ -167,7 +172,7 @@ public class EmployeeTicketPanel extends JPanel {
                 return;
             }
 
-            boolean saved = ticketDAO.submitTicket(employeeId, category, subject, description);
+            boolean saved = ticketDAO.submitTicket(employeeName, category, subject, description);
             if (saved) {
                 refreshTable();
                 JOptionPane.showMessageDialog(dialog,
@@ -192,7 +197,7 @@ public class EmployeeTicketPanel extends JPanel {
     // ════════════════════════════════════════════════════════════════════════
     private void refreshTable() {
         tableModel.setRowCount(0);
-        List<Ticket> tickets = ticketDAO.getTicketsByEmployee(employeeId);
+        List<Ticket> tickets = ticketDAO.getTicketsByEmployee(employeeName);
         for (Ticket t : tickets) {
             tableModel.addRow(new Object[]{
                 t.getTicketID(), t.getCategory(), t.getSubject(), t.getStatus()
