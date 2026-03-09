@@ -127,6 +127,7 @@ public class AdminDashboard extends JFrame {
         namePanel.add(nameLabel);
         namePanel.add(roleLabel);
         profilePanel.add(namePanel, BorderLayout.CENTER);
+        
 
         // Nav
         JPanel navPanel = new JPanel();
@@ -145,7 +146,7 @@ public class AdminDashboard extends JFrame {
         attendanceBtn   = makeNavBtn("Attendance",       "attendance.png");
         printPayslipBtn = makeNavBtn("Print Payslip",    "Payslip Button.png");
         logoutBtn       = makeNavBtn("Log-out",          "logout.png");
-        ticketBtn       = makeNavBtn("Ticket Support",   "IT Support.png");
+        ticketBtn       = makeNavBtn("Ticket Support",   "IT Support .png");
         logoutBtn.setForeground(Color.GRAY);
 
         navPanel.add(Box.createVerticalStrut(20));

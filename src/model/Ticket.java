@@ -40,5 +40,9 @@ public class Ticket {
     public void setSubject(String subject)         { this.subject = subject; }
     public void setDescription(String description) { this.description = description; }
     public void setStatus(String status)           { this.status = status; }
+
+    public Object getID() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
     
 }

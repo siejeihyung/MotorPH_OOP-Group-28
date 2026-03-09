@@ -60,7 +60,7 @@ public class TicketDAO {
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
-            br.readLine(); // Skip header
+            br.readLine(); 
             while ((line = br.readLine()) != null) {
                 String[] data = line.split(",");
                 if (data.length >= 6) {
@@ -73,5 +73,15 @@ public class TicketDAO {
             System.err.println("Error reading tickets: " + e.getMessage());
         }
         return tickets;
+    }
+    
+    public List<Ticket> getTicketsByUser(String username) {
+        List<Ticket> userTickets = new ArrayList<>();
+        for (Ticket t : getAllTickets()) {
+            if (t.getSenderName().equalsIgnoreCase(username)) {
+                userTickets.add(t);
+            }
+        }
+        return userTickets;
     }
 }

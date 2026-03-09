@@ -16,67 +16,54 @@ import java.awt.*;
 public class TicketSupportPanel extends JPanel {
     
     public TicketSupportPanel() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout(20, 20));
+        setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        setBackground(new Color(230, 235, 242));
 
-        JPanel formPanel = new JPanel(new SpringLayout());
-        formPanel.setOpaque(false);
+        // Title
+        JLabel title = new JLabel("Submit New Support Ticket");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        add(title, BorderLayout.NORTH);
 
-        String[] labels = {"Category: ", "Subject: ", "Message: "};
-        String[] categories = {"Technical Issue", "Payroll Inquiry", "HR Systems", "Other"};
+        // Form Area
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBorder(BorderFactory.createTitledBorder("Ticket Details"));
+        form.setBackground(Color.WHITE);
         
-        JComboBox<String> categoryBox = new JComboBox<>(categories);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Fields
+        String[] cats = {"Technical Issue", "Payroll Inquiry", "HR Systems", "Other"};
+        JComboBox<String> categoryBox = new JComboBox<>(cats);
         JTextField subjectField = new JTextField(20);
         JTextArea messageArea = new JTextArea(5, 20);
-        messageArea.setLineWrap(true);
 
-        formPanel.add(new JLabel(labels[0]));
-        formPanel.add(categoryBox);
-        formPanel.add(new JLabel(labels[1]));
-        formPanel.add(subjectField);
-        formPanel.add(new JLabel(labels[2]));
-        formPanel.add(new JScrollPane(messageArea));
-
-        // This uses the SpringUtilities you uploaded to align everything
-        SpringUtilities.makeCompactGrid(formPanel, 3, 2, 6, 6, 10, 10);
-
-        JButton submitBtn = new JButton("Submit Ticket");
+        // Styling for medium-sized look
+        Dimension fieldSize = new Dimension(300, 35);
+        categoryBox.setPreferredSize(fieldSize);
+        subjectField.setPreferredSize(fieldSize);
         
-        // ─── START OF INSERTED LOGIC ───
-        submitBtn.addActionListener(e -> {
-            TicketDAO dao = new TicketDAO();
-            
-            // 1. Automatically generate the next ID (e.g., TKT-1001)
-            String nextID = dao.generateNewID();
-            
-            // 2. Collect data from your GUI fields
-            // NOTE: Replace "Sunny Eljohn" with your session variable if you have one
-            String user = "Sunny Eljohn"; 
-            String cat  = (String) categoryBox.getSelectedItem();
-            String sub  = subjectField.getText();
-            String desc = messageArea.getText();
-            
-            // Basic Validation: Don't submit if fields are empty
-            if (sub.trim().isEmpty() || desc.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            // 3. Create the Ticket object
-            Ticket newTicket = new Ticket(nextID, user, cat, sub, desc);
-            
-            // 4. Save to CSV via the DAO
-            dao.saveTicket(newTicket);
-            
-            JOptionPane.showMessageDialog(this, "Ticket " + nextID + " submitted successfully!");
-            
-            // 5. Clear fields for next use
-            subjectField.setText("");
-            messageArea.setText("");
-        });
-        // ─── END OF INSERTED LOGIC ───
+        // Add components to GridBag
+        addField(form, "Category:", categoryBox, gbc, 0);
+        addField(form, "Subject:", subjectField, gbc, 1);
+        addField(form, "Message:", new JScrollPane(messageArea), gbc, 2);
 
-        add(formPanel, BorderLayout.CENTER);
+        add(form, BorderLayout.CENTER);
+
+        // Submit Button
+        JButton submitBtn = new JButton("Submit Ticket");
+        submitBtn.setPreferredSize(new Dimension(150, 40));
+        submitBtn.setBackground(new Color(29, 69, 143)); 
+        submitBtn.setForeground(Color.WHITE);
         add(submitBtn, BorderLayout.SOUTH);
+    }
+
+    private void addField(JPanel p, String label, JComponent field, GridBagConstraints gbc, int row) {
+        gbc.gridx = 0; gbc.gridy = row;
+        p.add(new JLabel(label), gbc);
+        gbc.gridx = 1;
+        p.add(field, gbc);
     }
 }

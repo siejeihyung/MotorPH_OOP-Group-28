@@ -31,11 +31,7 @@ public class ITSupportDashboard extends JFrame {
     private JButton logoutBtn;
 
    public ITSupportDashboard(String username) {
-        
-        // 1. Initialize the panel FIRST. This fixes the NullPointerException!
         this.contentPanel = new JPanel(new CardLayout());
-
-        // 2. Now it is safe to set the background
         this.contentPanel.setBackground(new Color(29, 69, 143));
 
         setTitle("MotorPH — IT Support Dashboard");
@@ -44,12 +40,12 @@ public class ITSupportDashboard extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // 2. Initialize Sidebar and Buttons
-        JPanel sidebar = buildSidebar(username); // Ensure this method initializes ticketListBtn/logoutBtn
+        // Initialize Sidebar and Buttons
+        JPanel sidebar = buildSidebar(username); 
 
-        // 3. Create and populate Ticket List View
+        // Create and populate Ticket List View
         JPanel ticketListView = new JPanel(new BorderLayout());
-        ticketListView.setBorder(new EmptyBorder(20, 20, 20, 20)); // Added padding
+        ticketListView.setBorder(new EmptyBorder(20, 20, 20, 20)); 
 
         // Call the table loader method
         loadTicketTable(ticketListView); 
@@ -57,7 +53,7 @@ public class ITSupportDashboard extends JFrame {
         // Add to contentPanel
         contentPanel.add(ticketListView, "TicketList");
 
-        // 4. Wiring
+        // Wiring
         if (ticketListBtn != null) {
             ticketListBtn.addActionListener(e -> cardLayout.show(contentPanel, "TicketList"));
         }
@@ -69,7 +65,7 @@ public class ITSupportDashboard extends JFrame {
             });
         }
 
-        // 5. Final layout assembly
+        // Final layout assembly
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
         setVisible(true);
@@ -81,7 +77,7 @@ public class ITSupportDashboard extends JFrame {
         sidebar.setPreferredSize(new Dimension(250, getHeight()));
         sidebar.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Profile Header (Using your style)
+        // Profile Header 
         JLabel nameLabel = new JLabel(user);
         JLabel roleLabel = new JLabel("IT Support Specialist");
         roleLabel.setForeground(Color.GRAY);
@@ -108,7 +104,7 @@ public class ITSupportDashboard extends JFrame {
         return sidebar;
     }
 
-    // Reuse your makeNavBtn factory method here...
+    // Reuse makeNavBtn factory method here...
     private JButton makeNavBtn(String text, String iconFile) {
         JButton btn = new JButton(text);
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -137,7 +133,6 @@ public class ITSupportDashboard extends JFrame {
                 t.getTicketID(), t.getSenderName(), t.getCategory(), t.getSubject(), t.getStatus()
             });
         }
-
         JTable table = new JTable(model);
         ticketListView.add(new JScrollPane(table), BorderLayout.CENTER);
     }
