@@ -4,6 +4,7 @@
  */
 package gui;
 
+import dao.CredentialsDAO;
 import dao.EmployeeDAO;
 import service.EmployeeService;
 import model.*;
@@ -44,7 +45,7 @@ public class FinanceDashboard extends JFrame {
     };
 
     public FinanceDashboard(String username) {
-        employeeService = new EmployeeService(new EmployeeDAO());
+        employeeService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
         fileHandler     = new FileHandler();
         fileHandler.readEmployeeFile();
         fileHandler.readAttendanceFile();

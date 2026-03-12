@@ -4,6 +4,7 @@
  */
 package gui;
 
+import dao.CredentialsDAO;
 import dao.TicketDAO;
 import dao.EmployeeDAO;
 import service.EmployeeService;
@@ -32,7 +33,7 @@ public class EmployeeTicketPanel extends JPanel {
     public EmployeeTicketPanel(String employeeId) {
         this.employeeId = employeeId;
         // ── Resolve actual name so sender shows name, not ID ──────────────────
-        EmployeeService empService = new EmployeeService(new EmployeeDAO());
+        EmployeeService empService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
         this.employeeName = empService.getEmployeeName(employeeId);
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));

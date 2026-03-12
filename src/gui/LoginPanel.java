@@ -1,5 +1,6 @@
 package gui;
 
+import dao.CredentialsDAO;
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
@@ -41,7 +42,7 @@ public class LoginPanel extends JFrame {
     private final ImageIcon backgroundImage     =
             new ImageIcon(getClass().getResource("/assets/loginpanel_bg.png"));
 
-    private final EmployeeService employeeService = new EmployeeService(new EmployeeDAO());
+    private final EmployeeService employeeService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
 
     public LoginPanel() {
         setTitle("MotorPH Payroll System - Login");

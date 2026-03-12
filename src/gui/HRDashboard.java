@@ -4,6 +4,7 @@
  */
 package gui;
 
+import dao.CredentialsDAO;
 import dao.EmployeeDAO;
 import service.EmployeeService;
 import javax.swing.*;
@@ -45,7 +46,7 @@ public class HRDashboard extends JFrame {
     };
 
     public HRDashboard(String username) {
-        employeeService = new EmployeeService(new EmployeeDAO());
+        employeeService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
 
         setTitle("MotorPH — HR Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

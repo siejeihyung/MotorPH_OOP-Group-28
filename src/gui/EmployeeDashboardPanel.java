@@ -42,7 +42,7 @@ public class EmployeeDashboardPanel extends JFrame {
 
     public EmployeeDashboardPanel(String employeeId) {
         this.employeeId  = employeeId;
-        employeeService  = new EmployeeService(new EmployeeDAO());
+        employeeService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
         leaveService     = new LeaveService(new LeaveDAO());
 
         String[] empData = employeeService.getEmployeeById(employeeId);

@@ -7,6 +7,8 @@ package dao;
 import com.opencsv.*;
 import java.io.*;
 import java.util.*;
+import model.Employee;
+import model.RegularEmployee;
 
 /**
  * EmployeeDAO — Data Access Object for employee records.
@@ -127,5 +129,27 @@ public class EmployeeDAO {
             return padded;
         }
         return fields.length > expectedSize ? Arrays.copyOf(fields, expectedSize) : fields;
+    }
+    public List<Employee> findAllEmployees() {
+        List<Employee> employeeList = new ArrayList<>();
+
+        for (String[] row : data) {
+            try {
+                // Assuming your CSV columns are: 0:ID, 1:LName, 2:FName, 13:Basic, 14:Semi, 15:Hourly, 18:Benefits
+                // Adjust these indices based on your actual CSV layout!
+                String id = row[0];
+                String lName = row[1];
+                String fName = row[2];
+                double basic = Double.parseDouble(row[13].replace(",", ""));
+                double semi = Double.parseDouble(row[14].replace(",", ""));
+                double hourly = Double.parseDouble(row[15].replace(",", ""));
+                double benefits = Double.parseDouble(row[18].replace(",", ""));
+
+                employeeList.add(new RegularEmployee(id, lName, fName, basic, semi, hourly, benefits));
+            } catch (Exception e) {
+                System.err.println("Skipping malformed row: " + Arrays.toString(row));
+            }
+        }
+        return employeeList;
     }
 }

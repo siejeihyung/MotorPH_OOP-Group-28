@@ -4,9 +4,11 @@
  */
 package service;
 
+import dao.CredentialsDAO;
 import dao.EmployeeDAO;
 import java.io.*;
 import java.util.*;
+import model.Employee;
 
 /**
  * EmployeeService — Business logic for employee management.
@@ -19,6 +21,7 @@ import java.util.*;
 public class EmployeeService {
 
     private final EmployeeDAO employeeDAO;
+    private final CredentialsDAO credentialsDAO;
     private final String credentialsFilePath = "credentials.csv";
 
     // ── Roles for RBAC ────────────────────────────────────────────────────────
@@ -28,8 +31,9 @@ public class EmployeeService {
     public static final String ROLE_EMPLOYEE = "EMPLOYEE";
     public static final String ROLE_IT_SUPPORT = "IT_SUPPORT";
 
-    public EmployeeService(EmployeeDAO employeeDAO) {
+    public EmployeeService(EmployeeDAO employeeDAO, CredentialsDAO credentialsDAO) {
         this.employeeDAO = employeeDAO;
+        this.credentialsDAO = credentialsDAO;
         this.employeeDAO.load();
     }
 
@@ -44,19 +48,25 @@ public class EmployeeService {
      *  null                     → login failed
      */
     public String authenticate(String username, String password) {
-        // Check credentials.csv first (Admin, HR, Finance)
-        String roleFromCredentials = checkCredentials(username, password);
-        if (roleFromCredentials != null) return roleFromCredentials;
+        // 1. Check Admin/HR/Finance via CredentialsDAO
+        Map<String, String[]> credentials = credentialsDAO.loadCredentials();
+        if (credentials.containsKey(username)) {
+            String[] stored = credentials.get(username);
+            if (stored[0].equals(password)) {
+                return stored[1]; // Returns the Role (ADMIN, HR, etc.)
+            }
+        }
 
-        // Check employee.csv (Regular Employee login: ID + Last Name)
-        for (String[] emp : employeeDAO.findAll()) {
-            if (emp.length > 1
-                    && emp[0].trim().equals(username)
-                    && emp[1].trim().equalsIgnoreCase(password)) {
+        // 2. Check Regular Employees via EmployeeDAO objects
+        List<Employee> allEmployees = employeeDAO.findAllEmployees(); 
+        for (Employee emp : allEmployees) {
+            // Logic: ID is username, Last Name is password
+            if (emp.getEmployeeID().equals(username) && 
+                emp.getLastName().equalsIgnoreCase(password)) {
                 return ROLE_EMPLOYEE;
             }
         }
-        return null; // Login failed
+        return null;
     }
 
     /**

@@ -7,6 +7,7 @@ package gui;
 import service.AttendanceService;
 import service.EmployeeService;
 import dao.AttendanceDAO;
+import dao.CredentialsDAO;
 import dao.EmployeeDAO;
 
 import javax.swing.*;
@@ -61,7 +62,7 @@ public class EmployeeAttendancePanel extends JPanel {
     public EmployeeAttendancePanel(String employeeId) {
         this.employeeId       = employeeId;
         this.attendanceService = new AttendanceService(new AttendanceDAO());
-        this.employeeService   = new EmployeeService(new EmployeeDAO());
+        this.employeeService = new EmployeeService(new EmployeeDAO(), new CredentialsDAO());
 
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
